@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Petualangan Detektif Indra - Game Pembelajaran PID</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Fredoka & Baloo 2 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    * {
+      font-family: 'Fredoka', 'Baloo 2', cursive, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 15%, #38bdf8 0%, #0284c7 50%, #0369a1 90%, #075985 100%);
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    /* Efek Tombol 3D Pop Ramah Layar Sentuh PID */
+    .btn-pop {
+      transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .btn-pop:active {
+      transform: translateY(6px) scale(0.98);
+    }
+
+    .btn-green-pop {
+      background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+      box-shadow: 0 8px 0 #047857, 0 14px 25px rgba(4, 120, 87, 0.4);
+    }
+    .btn-green-pop:active {
+      box-shadow: 0 2px 0 #047857, 0 4px 10px rgba(4, 120, 87, 0.3);
+    }
+
+    .btn-yellow-pop {
+      background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+      box-shadow: 0 8px 0 #b45309, 0 14px 25px rgba(180, 83, 9, 0.4);
+    }
+    .btn-yellow-pop:active {
+      box-shadow: 0 2px 0 #b45309, 0 4px 10px rgba(180, 83, 9, 0.3);
+    }
+
+    .btn-purple-pop {
+      background: linear-gradient(180deg, #c084fc 0%, #a855f7 100%);
+      box-shadow: 0 8px 0 #7e22ce, 0 14px 25px rgba(126, 34, 206, 0.4);
+    }
+    .btn-purple-pop:active {
+      box-shadow: 0 2px 0 #7e22ce, 0 4px 10px rgba(126, 34, 206, 0.3);
+    }
+
+    /* Kartu Organ Pos 1 */
+    .organ-pill {
+      touch-action: none;
+      cursor: grab;
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+      box-shadow: 0 8px 0 #94a3b8, 0 10px 18px rgba(0, 0, 0, 0.15);
+    }
+    .organ-pill:active, .organ-pill.dragging {
+      cursor: grabbing;
+      transform: scale(1.08) rotate(-2deg);
+      box-shadow: 0 18px 30px rgba(0, 0, 0, 0.25);
+      z-index: 50;
+    }
+    .organ-pill.selected-tap {
+      outline: 5px solid #f59e0b;
+      transform: translateY(-6px) scale(1.05);
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.8), 0 8px 0 #b45309;
+      animation: pulseGlow 1.2s infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      from { box-shadow: 0 0 15px rgba(245, 158, 11, 0.7), 0 8px 0 #b45309; }
+      to { box-shadow: 0 0 30px rgba(245, 158, 11, 1), 0 8px 0 #b45309; }
+    }
+
+    /* Kapsul Target Pos 1 */
+    .capsule-target {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border: 3.5px dashed #7dd3fc;
+      background: rgba(255, 255, 255, 0.95);
+    }
+    .capsule-target.drag-over {
+      border-color: #38bdf8;
+      border-style: solid;
+      background: #e0f2fe !important;
+      transform: scale(1.03);
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.6);
+    }
+    .capsule-target.matched {
+      border-style: solid;
+      border-color: #10b981;
+      background: linear-gradient(135deg, #ecfdf5, #d1fae5) !important;
+      box-shadow: 0 6px 0 #059669;
+    }
+    .capsule-target.failed {
+      border-style: solid;
+      border-color: #f43f5e;
+      background: linear-gradient(135deg, #fff1f2, #ffe4e6) !important;
+      box-shadow: 0 6px 0 #e11d48;
+    }
+
+    /* Kartu Kegiatan Pos 2 */
+    .activity-card {
+      transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 6px 0 #cbd5e1, 0 8px 16px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+    }
+    .activity-card:active {
+      transform: translateY(4px);
+    }
+    .activity-card.selected {
+      border-color: #0284c7 !important;
+      background: linear-gradient(145deg, #eff6ff, #dbeafe) !important;
+      box-shadow: 0 7px 0 #0369a1, 0 12px 24px rgba(2, 132, 199, 0.35);
+      transform: translateY(-4px) scale(1.03);
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-14px); }
+      40%, 80% { transform: translateX(14px); }
+    }
+    .shake-animation {
+      animation: shake 0.45s ease-in-out;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.6); opacity: 0; }
+      70% { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop-in {
+      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+  </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between items-center text-slate-800 p-2 md:p-4 select-none relative">
+
+  <!-- Awan & Efek Dekorasi Kartun -->
+  <div class="absolute top-6 left-8 text-white/30 text-8xl pointer-events-none animate-pulse">☁️</div>
+  <div class="absolute top-16 right-12 text-white/30 text-9xl pointer-events-none animate-pulse" style="animation-delay: 1.5s;">☁️</div>
+  <div class="absolute bottom-12 left-10 text-amber-200/40 text-7xl pointer-events-none">✨</div>
+  <div class="absolute bottom-16 right-14 text-cyan-200/40 text-7xl pointer-events-none">🎈</div>
+
+  <!-- ================= TOP HEADER BAR ================= -->
+  <header class="w-full max-w-6xl mx-auto flex justify-between items-center z-20 px-2">
+    <!-- Profil Detektif Siswa & Pos Misi -->
+    <div class="flex items-center gap-3 bg-white/95 backdrop-blur px-4 py-2 rounded-2xl shadow-lg border-2 border-white">
+      <span class="text-3xl md:text-4xl">🔍</span>
+      <div>
+        <div class="flex items-center gap-2">
+          <p id="student-name-header" class="text-xs md:text-sm uppercase font-black text-sky-800">Detektif Cilik</p>
+          <span id="student-class-header" class="bg-amber-100 text-amber-800 text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full border border-amber-300">Kelas 3</span>
+        </div>
+        <p id="level-title-display" class="text-sm md:text-lg font-black text-slate-800 leading-tight">Pos Persiapan</p>
+      </div>
+    </div>
+
+    <!-- Papan Skor Bintang Ceria -->
+    <div class="flex items-center gap-2.5 bg-gradient-to-r from-amber-400 to-amber-500 border-2 border-amber-300 px-5 py-2 rounded-full shadow-lg text-white">
+      <span class="text-3xl md:text-4xl">⭐</span>
+      <div class="flex flex-col leading-none">
+        <span class="text-[10px] md:text-xs uppercase font-extrabold text-amber-950 tracking-wider">Skor Detektif</span>
+        <span id="score-display" class="text-xl md:text-3xl font-black text-amber-950">0 Poin</span>
+      </div>
+    </div>
+
+    <!-- Kontrol Suara & Layar Penuh PID -->
+    <div class="flex items-center gap-2">
+      <button id="sound-btn" onclick="toggleSound()" class="w-12 h-12 md:w-14 md:h-14 bg-white/95 rounded-2xl shadow-md border-2 border-white text-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition" title="Suara On/Off">
+        🔊
+      </button>
+      <button onclick="toggleFullScreen()" class="w-12 h-12 md:w-14 md:h-14 bg-white/95 rounded-2xl shadow-md border-2 border-white text-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition" title="Layar Penuh PID">
+        ⛶
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= SCREEN 0: OPENING / FORM SISWA ================= -->
+  <main id="screen-opening" class="w-full max-w-3xl mx-auto flex-1 flex flex-col justify-center items-center text-center z-10 py-2">
+    <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 md:p-8 shadow-2xl border-4 border-white w-full max-w-xl text-center relative">
+      <div class="relative inline-block mb-2">
+        <div class="text-7xl md:text-8xl filter drop-shadow-xl">🕵️‍♀️</div>
+        <div class="absolute -bottom-1 -right-2 bg-pink-500 text-white text-xs md:text-sm font-black px-3 py-0.5 rounded-full border-2 border-white shadow">
+          Desa Sensorika ✨
+        </div>
+      </div>
+
+      <span class="inline-block bg-sky-100 text-sky-800 px-4 py-1 rounded-full text-xs md:text-sm font-black tracking-wider uppercase mb-1 shadow-sm">
+        IPAS FASE B • KELAS 3 SD
+      </span>
+      <h1 class="text-2xl md:text-4xl font-black text-slate-800 leading-tight mb-4">
+        PETUALANGAN DETEKTIF INDRA
+      </h1>
+
+      <div class="space-y-3.5 mb-5 text-left">
+        <div>
+          <label class="block text-xs md:text-sm font-black text-slate-700 mb-1 ml-1">Nama Detektif Cilik:</label>
+          <input id="input-student-name" type="text" placeholder="Ketik nama siswa (contoh: Siti / Budi)..." class="w-full px-4 py-3 rounded-2xl border-2 border-sky-300 focus:border-sky-500 focus:outline-none text-base md:text-lg font-bold text-slate-800 bg-sky-50/50 shadow-inner">
+        </div>
+        <div>
+          <label class="block text-xs md:text-sm font-black text-slate-700 mb-1 ml-1">Kelas:</label>
+          <input id="input-student-class" type="text" placeholder="Contoh: Kelas 3A / 3B..." value="Kelas 3A" class="w-full px-4 py-3 rounded-2xl border-2 border-sky-300 focus:border-sky-500 focus:outline-none text-base md:text-lg font-bold text-slate-800 bg-sky-50/50 shadow-inner">
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row justify-center items-center gap-3">
+        <button onclick="handleStartMission()" class="btn-pop btn-green-pop text-white text-xl md:text-2xl font-black px-10 py-4 rounded-2xl flex items-center justify-center gap-3 w-full sm:w-auto border-2 border-emerald-300">
+          <span>MULAI PENYELIDIKAN</span>
+          <span class="text-3xl">🚀</span>
+        </button>
+        <button onclick="showRubrikModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold px-5 py-4 rounded-2xl transition text-sm md:text-base border border-slate-300">
+          📋 Rubrik Guru
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= SCREEN 1: POS 1 (DRAG & DROP KAPSUL AJAIB) ================= -->
+  <main id="screen-pos1" class="w-full max-w-6xl mx-auto flex-1 flex flex-col justify-between items-center z-10 py-1 hidden">
+    <div class="w-full bg-white/95 backdrop-blur-md rounded-2xl px-5 py-2.5 shadow-xl border-2 border-white text-center mb-2 flex justify-between items-center">
+      <div class="text-left">
+        <span class="bg-emerald-500 text-white font-black px-3 py-0.5 rounded-full text-xs uppercase tracking-wide">
+          Pos 1: Kapsul Sensor Indra
+        </span>
+        <h2 class="text-base md:text-2xl font-black text-slate-800 leading-tight">
+          Cocokkan Organ ke Kapsul Fungsi yang Tepat! 🎯
+        </h2>
+      </div>
+      <div class="bg-emerald-100 text-emerald-800 px-4 py-1.5 rounded-xl font-black text-sm md:text-base border border-emerald-300">
+        <span id="pos1-counter">0 / 5</span> Selesai
+      </div>
+    </div>
+
+    <!-- Baris Organ -->
+    <div class="w-full">
+      <p class="text-xs md:text-sm font-extrabold text-white text-center mb-1 drop-shadow">
+        ✨ Seret organ ke wadah di bawah, atau ketuk organ lalu ketuk wadah tujuannya! ✨
+      </p>
+      <div id="pos1-organs-row" class="grid grid-cols-5 gap-2 md:gap-3 w-full max-w-5xl mx-auto">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Baris Kapsul Target -->
+    <div class="w-full mt-2">
+      <div id="pos1-capsules-grid" class="grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-3 w-full max-w-5xl mx-auto">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= SCREEN 2: POS 2 (RADAR MULTI-AKTIVITAS 5 RONDE) ================= -->
+  <main id="screen-pos2" class="w-full max-w-5xl mx-auto flex-1 flex flex-col justify-between items-center z-10 py-1 hidden">
+    <div class="w-full flex items-center justify-between text-white font-black text-xs md:text-sm mb-1 px-1">
+      <span id="pos2-round-indicator" class="bg-sky-900/60 backdrop-blur px-4 py-1 rounded-full">Ronde 1 dari 5</span>
+      <span class="bg-amber-500 px-4 py-1 rounded-full shadow text-amber-950 font-black">🎯 Pos 2: Radar Aktivitas</span>
+    </div>
+
+    <!-- Kotak Misi -->
+    <div class="w-full bg-white rounded-3xl p-3 md:p-4 shadow-2xl border-4 border-amber-300 text-center mb-2">
+      <div class="flex items-center justify-center gap-3">
+        <span id="pos2-header-icon" class="text-4xl md:text-5xl filter drop-shadow">👁️</span>
+        <div class="text-left">
+          <span id="pos2-organ-badge" class="bg-amber-100 text-amber-900 text-xs font-black px-3 py-0.5 rounded-full border border-amber-300">
+            Fokus: Indra Penglihatan
+          </span>
+          <h2 id="pos2-mission-prompt" class="text-base md:text-2xl font-black text-slate-800 leading-tight">
+            Pilih SEMUA aktivitas yang membutuhkan indra ini!
+          </h2>
+        </div>
+      </div>
+      <p id="pos2-sub-hint" class="text-xs md:text-sm font-bold text-sky-800 mt-1">
+        Ketuk 3 kartu yang tepat, lalu tekan tombol "Kunci Bukti"!
+      </p>
+    </div>
+
+    <!-- Kisi 6 Kartu Aktivitas -->
+    <div id="pos2-cards-grid" class="w-full grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3.5 flex-1 mb-2">
+      <!-- Rendered by JS -->
+    </div>
+
+    <div class="w-full flex justify-center items-center py-1">
+      <button id="pos2-submit-btn" onclick="submitPos2Selection()" class="btn-pop btn-yellow-pop text-amber-950 font-black text-lg md:text-2xl px-10 py-3 rounded-2xl flex items-center gap-3 border-2 border-amber-200">
+        <span>KUNCI BUKTI PENYELIDIKAN</span>
+        <span class="text-3xl">🔍</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- ================= SCREEN 3: POS 3 (STUDI KASUS KOGNITIF KRITIS) ================= -->
+  <main id="screen-pos3" class="w-full max-w-4xl mx-auto flex-1 flex flex-col justify-center items-center z-10 py-1 hidden">
+    <div class="w-full flex items-center justify-between text-white font-black text-xs md:text-sm mb-2 px-1">
+      <span id="pos3-case-indicator" class="bg-purple-900/60 px-4 py-1 rounded-full">Kasus 1 dari 3</span>
+      <span class="bg-purple-500 px-4 py-1 rounded-full shadow text-white font-black">🧠 Pos 3: Penyelidikan Kasus Kritis</span>
+    </div>
+
+    <div class="w-full bg-white rounded-3xl p-5 md:p-6 shadow-2xl border-4 border-purple-200 text-center mb-3">
+      <div class="inline-block bg-purple-100 text-purple-800 px-4 py-1 rounded-full text-xs md:text-sm font-black mb-2">
+        STUDI KASUS DETEKTIF CILIK
+      </div>
+      <div id="pos3-icon" class="text-6xl md:text-7xl mb-1 filter drop-shadow">🚨</div>
+      <h2 id="pos3-scenario" class="text-base md:text-2xl font-black text-slate-800 leading-snug">
+        Pertanyaan kasus...
+      </h2>
+    </div>
+
+    <!-- Pilihan Kasus -->
+    <div id="pos3-options-container" class="w-full grid grid-cols-1 gap-2.5 mb-2">
+      <!-- Rendered by JS -->
+    </div>
+  </main>
+
+  <!-- ================= SCREEN 4: HASIL AKHIR & SERTIFIKAT ================= -->
+  <main id="screen-result" class="w-full max-w-3xl mx-auto flex-1 flex flex-col justify-center items-center text-center z-10 py-2 hidden">
+    <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 md:p-8 shadow-2xl border-4 border-amber-300 w-full text-center relative">
+      <div id="res-badge-icon" class="text-7xl md:text-8xl mb-1 animate-bounce">🏆</div>
+      <h2 class="text-2xl md:text-4xl font-black text-slate-800 mb-0.5">
+        MISI SELESAI!
+      </h2>
+      <p id="res-student-subtitle" class="text-base md:text-xl font-black text-sky-700 mb-3">
+        Siswa - Kelas
+      </p>
+
+      <div class="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-dashed border-amber-400 rounded-2xl p-4 mb-4 text-slate-800">
+        <p class="text-xs uppercase font-extrabold text-amber-800 tracking-widest">Predikat Capaian Pembelajaran</p>
+        <p id="res-status-title" class="text-xl md:text-2xl font-black text-emerald-600 my-1">
+          Detektif Master Sensorika
+        </p>
+        <div class="flex justify-center items-center gap-6 my-2">
+          <div class="text-center">
+            <span class="text-xs text-slate-500 font-bold">Total Skor</span>
+            <p id="res-final-score" class="text-3xl md:text-4xl font-black text-amber-950">100</p>
+          </div>
+          <div class="text-center">
+            <span class="text-xs text-slate-500 font-bold">Bintang Terkumpul</span>
+            <p id="res-final-stars" class="text-3xl md:text-4xl font-black text-amber-500">⭐ 20</p>
+          </div>
+        </div>
+        <p id="res-feedback-text" class="text-xs md:text-sm font-bold text-slate-600 max-w-md mx-auto">
+          Catatan hasil pengamatan...
+        </p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row justify-center gap-3">
+        <button onclick="restartToOpening()" class="btn-pop btn-green-pop text-white font-black text-lg md:text-xl px-8 py-3.5 rounded-2xl flex items-center justify-center gap-2 border-2 border-emerald-300">
+          <span>PEMAIN BARU / MISI BARU</span>
+          <span>🔄</span>
+        </button>
+        <button onclick="showRubrikModal()" class="bg-sky-600 hover:bg-sky-700 text-white font-extrabold px-6 py-3.5 rounded-2xl shadow-md border-2 border-sky-400 transition text-base flex items-center justify-center gap-2">
+          <span>📋 Lihat Rubrik Guru</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= POP-UP FAKTA SAINS BESAR (POS 3) ================= -->
+  <div id="modal-fact-science" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl border-4 border-emerald-400 text-center animate-pop-in">
+      <div class="inline-block bg-emerald-100 text-emerald-800 text-sm md:text-base font-black px-4 py-1 rounded-full mb-3">
+        💡 FAKTA SAINS DETEKTIF
+      </div>
+      <div class="text-6xl md:text-7xl mb-2 animate-bounce">🔬</div>
+      <h3 class="text-xl md:text-3xl font-black text-slate-800 mb-3">
+        Hebat, Analisismu Sangat Tepat!
+      </h3>
+      <p id="modal-fact-text" class="text-base md:text-xl font-bold text-slate-700 bg-emerald-50 border-2 border-emerald-200 p-4 md:p-5 rounded-2xl leading-relaxed mb-6 text-left">
+        Penjelasan sains detektif...
+      </p>
+      <button onclick="nextPos3FromModal()" class="btn-pop btn-green-pop w-full text-white font-black text-xl md:text-2xl py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 border-2 border-emerald-300">
+        <span>LANJUT KE KASUS BERIKUTNYA</span>
+        <span class="text-3xl">➜</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= POP-UP SILANG SALAH BESAR (❌ TETNOT) ================= -->
+  <div id="modal-wrong-feedback" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 md:p-7 shadow-2xl border-4 border-rose-500 text-center animate-pop-in">
+      <div class="text-7xl md:text-8xl mb-2 text-rose-500 animate-pulse">❌</div>
+      <div class="text-4xl mb-2">😭</div>
+      <h3 class="text-2xl md:text-3xl font-black text-rose-600 mb-2">
+        TET-NOOOT!
+      </h3>
+      <p id="modal-wrong-title" class="text-base md:text-lg font-black text-slate-800 mb-2">
+        Jawaban Masih Belum Tepat!
+      </p>
+      <div id="modal-wrong-detail" class="text-xs md:text-sm font-bold text-rose-900 bg-rose-50 border-2 border-rose-200 p-3 rounded-2xl mb-4 text-left">
+        Kunci jawaban yang benar...
+      </div>
+      <p class="text-xs font-bold text-slate-500 mb-4">
+        Skor tidak bertambah. Lanjut ke tantangan berikutnya!
+      </p>
+      <button onclick="closeWrongModalAndProceed()" class="btn-pop bg-rose-600 hover:bg-rose-700 text-white font-black text-lg md:text-xl py-3.5 px-8 rounded-2xl shadow-lg border-2 border-rose-400 w-full">
+        LANJUTKAN ➜
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL RUBRIK GURU ================= -->
+  <div id="rubrik-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-5 md:p-7 shadow-2xl border-4 border-sky-400 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-3">
+        <div>
+          <h3 class="text-xl md:text-2xl font-black text-slate-800">Rubrik Evaluasi Pembelajaran PID</h3>
+          <p class="text-xs font-bold text-sky-700">Materi: Pancaindra & Fungsinya (IPAS Kelas 3 / Fase B)</p>
+        </div>
+        <button onclick="closeRubrikModal()" class="w-9 h-9 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 rounded-full font-black text-lg transition">✕</button>
+      </div>
+
+      <div class="space-y-2.5 text-left text-xs md:text-sm">
+        <div class="p-3 rounded-2xl bg-emerald-50 border-2 border-emerald-300">
+          <div class="flex items-center justify-between font-black text-emerald-800 mb-1">
+            <span>Sangat Mahir (Nilai 85 - 100)</span>
+            <span>⭐ ⭐ ⭐</span>
+          </div>
+          <p class="text-emerald-950 font-bold">Mampu memasangkan organ indra tanpa keliru, menyaring 5 kelompok aktivitas kontekstual secara akurat, dan menyelesaikan studi kasus kritis mandiri.</p>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-sky-50 border-2 border-sky-300">
+          <div class="flex items-center justify-between font-black text-sky-800 mb-1">
+            <span>Mahir (Nilai 70 - 84)</span>
+            <span>⭐ ⭐</span>
+          </div>
+          <p class="text-sky-950 font-bold">Mengenal organ dan fungsi dasarnya, serta berhasil pada sebagian besar radar kegiatan sehari-hari.</p>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-amber-50 border-2 border-amber-300">
+          <div class="flex items-center justify-between font-black text-amber-800 mb-1">
+            <span>Cukup (Nilai 50 - 69)</span>
+            <span>⭐</span>
+          </div>
+          <p class="text-amber-950 font-bold">Mengenal organ dasar, namun masih membutuhkan bimbingan saat membedakan fungsi indra peraba dan indra pengecap.</p>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-rose-50 border-2 border-rose-300">
+          <div class="flex items-center justify-between font-black text-rose-800 mb-1">
+            <span>Perlu Bimbingan (Nilai < 50)</span>
+            <span>Perlu Penguatan</span>
+          </div>
+          <p class="text-rose-950 font-bold">Membutuhkan pendampingan guru dalam mengenali nama organ dan rangsangan dasarnya.</p>
+        </div>
+      </div>
+
+      <button onclick="closeRubrikModal()" class="w-full mt-4 bg-slate-800 text-white font-extrabold py-3 rounded-2xl hover:bg-slate-700 transition">
+        Tutup Rubrik
+      </button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="w-full max-w-6xl mx-auto text-center py-1 z-20">
+    <p class="text-white font-bold text-xs md:text-sm drop-shadow">
+      💡 Dioptimalkan untuk Layar Papan Interaktif Digital (PID). Dilengkapi audio ceria mandiri tanpa download.
+    </p>
+  </footer>
+
+  <!-- ================= JAVASCRIPT SYSTEM ================= -->
+  <script>
+    // --- 1. AUDIO SYNTHESIZER & SPEECH SYNTHESIS (100% OFFLINE) ---
+    let audioCtx = null;
+    let isSoundOn = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Suara Tepuk Tangan Meriah (Synthesized Noise Generator)
+    function playClappingApplause() {
+      if (!isSoundOn || !audioCtx) return;
+      const now = audioCtx.currentTime;
+      const clapCount = 30;
+
+      for (let i = 0; i < clapCount; i++) {
+        const timeOffset = Math.random() * 0.9;
+        const bufferSize = audioCtx.sampleRate * 0.045;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let j = 0; j < bufferSize; j++) {
+          data[j] = (Math.random() * 2 - 1) * Math.exp(-j / (audioCtx.sampleRate * 0.009));
+        }
+
+        const clapSource = audioCtx.createBufferSource();
+        clapSource.buffer = buffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1100 + (Math.random() * 400 - 200), now + timeOffset);
+        filter.Q.setValueAtTime(1.8, now + timeOffset);
+
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.25 + Math.random() * 0.2, now + timeOffset);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + timeOffset + 0.045);
+
+        clapSource.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        clapSource.start(now + timeOffset);
+      }
+    }
+
+    // Efek Kemenangan HOREEE + Fanfare + Tepuk Tangan
+    function playHoreeCheer() {
+      if (!isSoundOn) return;
+      try {
+        initAudio();
+        const now = audioCtx.currentTime;
+
+        // Fanfare Lonceng Nada C-E-G-C (Mayor Arpeggio)
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + (idx * 0.08));
+
+          gain.gain.setValueAtTime(0.3, now + (idx * 0.08));
+          gain.gain.linearRampToValueAtTime(0.01, now + (idx * 0.08) + 0.4);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + (idx * 0.08));
+          osc.stop(now + (idx * 0.08) + 0.4);
+        });
+
+        // Suara gemuruh tepuk tangan
+        playClappingApplause();
+
+        // Suara Sorakan Bersemangat (Speech API)
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const cheerPhrases = [
+            'Horeee! Luar biasa sekali!',
+            'Horeee! Jawabanmu tepat!',
+            'Hebat sekali! Pintar!'
+          ];
+          const cheer = cheerPhrases[Math.floor(Math.random() * cheerPhrases.length)];
+          const utterance = new SpeechSynthesisUtterance(cheer);
+          utterance.lang = 'id-ID';
+          utterance.pitch = 1.4;
+          utterance.rate = 1.15;
+          window.speechSynthesis.speak(utterance);
+        }
+      } catch (e) {}
+    }
+
+    // Efek Nada TETNOT Buzzer + Tangisan Kartun
+    function playTetnotWrong() {
+      if (!isSoundOn) return;
+      try {
+        initAudio();
+        const now = audioCtx.currentTime;
+
+        // Dua nada buzzer kuis TV "TET - NOT!" yang tegas
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc1.type = 'sawtooth';
+        osc2.type = 'sawtooth';
+
+        // Nada 'TET'
+        osc1.frequency.setValueAtTime(160, now);
+        osc2.frequency.setValueAtTime(163, now);
+
+        // Nada 'NOT' (lebih rendah)
+        osc1.frequency.setValueAtTime(115, now + 0.22);
+        osc2.frequency.setValueAtTime(118, now + 0.22);
+
+        gain.gain.setValueAtTime(0.32, now);
+        gain.gain.setValueAtTime(0.01, now + 0.2);
+        gain.gain.setValueAtTime(0.35, now + 0.22);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.55);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.55);
+        osc2.stop(now + 0.55);
+
+        // Suara tangisan kartun anak
+        if ('speechSynthesis' in window) {
+          setTimeout(() => {
+            window.speechSynthesis.cancel();
+            const cryPhrases = [
+              'Tetnot! Hu-hu-hu... Masih keliru!',
+              'Tetnot! Hu-hu-hu... Kurang tepat!',
+              'Tetnot! Hu-hu-hu... Coba lagi nanti!'
+            ];
+            const cry = cryPhrases[Math.floor(Math.random() * cryPhrases.length)];
+            const utterance = new SpeechSynthesisUtterance(cry);
+            utterance.lang = 'id-ID';
+            utterance.pitch = 1.5;
+            utterance.rate = 1.1;
+            window.speechSynthesis.speak(utterance);
+          }, 250);
+        }
+      } catch (e) {}
+    }
+
+    function playBeep(type = 'click') {
+      if (!isSoundOn) return;
+      try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'click') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(500, now);
+          osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        }
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      isSoundOn = !isSoundOn;
+      document.getElementById('sound-btn').textContent = isSoundOn ? '🔊' : '🔇';
+      if (isSoundOn) playBeep('click');
+    }
+
+    function toggleFullScreen() {
+      playBeep('click');
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+
+    // --- 2. STATE GAME UTAMA ---
+    let studentName = "Detektif Cilik";
+    let studentClass = "Kelas 3";
+    let totalScore = 0;
+    let earnedStars = 0;
+    let pendingWrongCallback = null;
+
+    // --- 3. DATA POS 1: ORGAN & FUNGSI ---
+    const pos1Organs = [
+      { id: 'mata', name: 'MATA', icon: '👁️', color: 'from-amber-400 to-orange-400', border: 'border-amber-400' },
+      { id: 'telinga', name: 'TELINGA', icon: '👂', color: 'from-sky-400 to-blue-500', border: 'border-sky-400' },
+      { id: 'hidung', name: 'HIDUNG', icon: '👃', color: 'from-emerald-400 to-teal-500', border: 'border-emerald-400' },
+      { id: 'lidah', name: 'LIDAH', icon: '👅', color: 'from-pink-400 to-rose-500', border: 'border-pink-400' },
+      { id: 'kulit', name: 'KULIT', icon: '✋', color: 'from-purple-400 to-indigo-500', border: 'border-purple-400' }
+    ];
+
+    const pos1Capsules = [
+      { id: 'mata', title: 'Fungsi Penglihatan', desc: 'Melihat warna, membaca buku, & mengamati pemandangan', icon: '🌈' },
+      { id: 'telinga', title: 'Fungsi Pendengaran', desc: 'Mendengar bunyi bel sekolah, suara musik, & percakapan', icon: '🔔' },
+      { id: 'hidung', title: 'Fungsi Penciuman', desc: 'Mencium aroma wangi bunga & bau asap masakan', icon: '🌸' },
+      { id: 'lidah', title: 'Fungsi Pengecap', desc: 'Mengecap rasa manis, asin, asam, gurih, & pahit', icon: '🍦' },
+      { id: 'kulit', title: 'Fungsi Peraba', desc: 'Merasakan kasar, halus, panas, dingin, & rasa sakit', icon: '🧤' }
+    ];
+
+    let pos1ProcessedCount = 0;
+    let tapSelectedOrgan = null;
+
+    // --- 4. DATA POS 2: BANK AKTIVITAS 5 INDRA (DIACAK) ---
+    const pos2MasterBank = {
+      mata: {
+        name: "MATA (PENGLIHATAN)",
+        badge: "Fokus 1: Indra Penglihatan",
+        icon: "👁️",
+        prompt: "Pilih SEMUA aktivitas yang membutuhkan INDRA PENGLIHATAN (MATA)!",
+        validPool: [
+          { text: "Melihat Pelangi di Langit", icon: "🌈" },
+          { text: "Melihat Lampu Rambu Lalu Lintas", icon: "🚦" },
+          { text: "Mengamati Bintang Lewat Teleskop", icon: "🔭" },
+          { text: "Membaca Buku Cerita Bergambar", icon: "📖" },
+          { text: "Menonton Pertunjukan Wayang Kulit", icon: "🎭" }
+        ],
+        distractorPool: [
+          { text: "Mencium Bau Sampah Busuk", icon: "🗑️" },
+          { text: "Mendengar Sirine Ambulans", icon: "🚑" },
+          { text: "Merasakan Lembutnya Bantal", icon: "🛏️" },
+          { text: "Mengecap Rasa Es Krim", icon: "🍦" }
+        ]
+      },
+      telinga: {
+        name: "TELINGA (PENDENGARAN)",
+        badge: "Fokus 2: Indra Pendengaran",
+        icon: "👂",
+        prompt: "Pilih SEMUA aktivitas yang membutuhkan INDRA PENDENGARAN (TELINGA)!",
+        validPool: [
+          { text: "Mendengar Penjelasan Guru", icon: "👩‍🏫" },
+          { text: "Menikmati Lagu di Radio", icon: "📻" },
+          { text: "Mendengar Suara Petir Menggelegar", icon: "⚡" },
+          { text: "Mendengar Detak Jarum Jam Dinding", icon: "⏰" },
+          { text: "Mendengar Kicauan Burung Pagi Hari", icon: "🐦" }
+        ],
+        distractorPool: [
+          { text: "Melihat Lukisan Warna-Warni", icon: "🎨" },
+          { text: "Mengecap Rasa Jeruk Nipis", icon: "🍋" },
+          { text: "Mencium Aroma Parfum Bunga", icon: "🌸" },
+          { text: "Meraba Halusnya Kain Sutra", icon: "🧣" }
+        ]
+      },
+      hidung: {
+        name: "HIDUNG (PENCIUMAN)",
+        badge: "Fokus 3: Indra Penciuman",
+        icon: "👃",
+        prompt: "Pilih SEMUA aktivitas yang membutuhkan INDRA PENCIUMAN (HIDUNG)!",
+        validPool: [
+          { text: "Mencium Wangi Kue Dipanggang", icon: "🧁" },
+          { text: "Mencium Bau Asap Gosong di Dapur", icon: "🍳" },
+          { text: "Menghirup Aroma Minyak Kayu Putih", icon: "🌿" },
+          { text: "Mencium Segarnya Rumput Basah", icon: "🌱" },
+          { text: "Membau Busuknya Makanan Basi", icon: "🧫" }
+        ],
+        distractorPool: [
+          { text: "Mendengar Suara Gitar Dipetik", icon: "🎸" },
+          { text: "Melihat Burung Terbang Tinggi", icon: "🦅" },
+          { text: "Mengecap Rasa Permen Manis", icon: "🍬" },
+          { text: "Merasakan Kasarnya Batang Pohon", icon: "🪵" }
+        ]
+      },
+      lidah: {
+        name: "LIDAH (PENGECAP)",
+        badge: "Fokus 4: Indra Pengecap",
+        icon: "👅",
+        prompt: "Pilih SEMUA aktivitas yang membutuhkan INDRA PENGECAP (LIDAH)!",
+        validPool: [
+          { text: "Mengecap Manisnya Madu Alami", icon: "🍯" },
+          { text: "Mengecap Asinnya Kuah Sup Sayur", icon: "🥣" },
+          { text: "Mengecap Asamnya Buah Mangga Muda", icon: "🥭" },
+          { text: "Mengecap Pahitnya Jamu Tradisional", icon: "🍵" },
+          { text: "Mengecap Gurihnya Keju", icon: "🧀" }
+        ],
+        distractorPool: [
+          { text: "Mendengar Bunyi Bel Sepeda", icon: "🚲" },
+          { text: "Melihat Pemandangan Gunung", icon: "⛰️" },
+          { text: "Mencium Bau Obat Rumah Sakit", icon: "🏥" },
+          { text: "Merasakan Panasnya Air Mandi", icon: "🛁" }
+        ]
+      },
+      kulit: {
+        name: "KULIT (PERABA)",
+        badge: "Fokus 5: Indra Peraba",
+        icon: "✋",
+        prompt: "Pilih SEMUA aktivitas yang membutuhkan INDRA PERABA (KULIT)!",
+        validPool: [
+          { text: "Merasakan Halusnya Bulu Kucing", icon: "🐱" },
+          { text: "Merasakan Dinginnya Es Batu", icon: "🧊" },
+          { text: "Merasakan Kasarnya Permukaan Amplas", icon: "🧱" },
+          { text: "Merasakan Hangatnya Sinar Matahari Pagi", icon: "☀️" },
+          { text: "Merasakan Sakit Tergores Ranting", icon: "🩹" }
+        ],
+        distractorPool: [
+          { text: "Melihat Pelangi Setelah Hujan", icon: "🌦️" },
+          { text: "Mendengar Kicauan Burung", icon: "🦜" },
+          { text: "Mengecap Rasa Sambal Pedas", icon: "🌶️" },
+          { text: "Mencium Aroma Bunga Mawar", icon: "🌹" }
+        ]
+      }
+    };
+
+    const pos2OrganKeys = ['mata', 'telinga', 'hidung', 'lidah', 'kulit'];
+    let pos2CurrentRoundIndex = 0;
+    let pos2CurrentRoundData = null;
+    let pos2SelectedCards = new Set();
+
+    // --- 5. DATA POS 3: BANK 8 STUDI KASUS NYATA (DIACAK 3 KASUS) ---
+    const pos3QuestionBank = [
+      {
+        scenario: "Ibu sedang memasak di dapur. Tiba-tiba tercium bau gosong menyengat dan alarm asap berbunyi kencang. Dua indra apa yang pertama kali memberi tahu bahaya sebelum api terlihat?",
+        icon: "🚨",
+        explanation: "Indra pembau (hidung) menangkap gas asap dan indra pendengaran (telinga) menangkap suara alarm darurat secara bersamaan sehingga kita bisa cepat menyelamatkan diri!",
+        options: [
+          { text: "Hidung (Membau asap) & Telinga (Mendengar alarm)", icon: "👃👂", correct: true },
+          { text: "Lidah (Mengecap) & Kulit (Meraba dinding)", icon: "👅✋", correct: false },
+          { text: "Mata (Melihat) & Lidah (Mengecap)", icon: "👁️👅", correct: false }
+        ]
+      },
+      {
+        scenario: "Di dapur ada dua toples bening berisi bubuk putih halus (garam dan gula). Bentuk dan warnanya sama persis! Indra apakah yang paling tepat dan aman untuk membedakannya saat memasak?",
+        icon: "🧂",
+        explanation: "Indra pengecap (lidah) memiliki bintil pengecap yang langsung mengenali rasa asin pada garam dan rasa manis pada gula!",
+        options: [
+          { text: "Indra pengecap (Lidah)", icon: "👅", correct: true },
+          { text: "Indra pendengar (Telinga)", icon: "👂", correct: false },
+          { text: "Indra penglihat (Mata) saja", icon: "👁️", correct: false }
+        ]
+      },
+      {
+        scenario: "Dalam permainan tebak benda dengan mata tertutup kain, Siti memegang boneka berbulu sangat halus dan beraroma vanila. Mengapa Siti bisa menebak benda itu tanpa melihat?",
+        icon: "🧸",
+        explanation: "Kulit meraba tekstur kelembutan bulu boneka dan hidung mencium aroma vanila khas, membuktikan bahwa tubuh kita bekerja sama menggunakan banyak indra sekaligus!",
+        options: [
+          { text: "Karena telinga Siti dapat mendengar warna bulu boneka", icon: "👂", correct: false },
+          { text: "Karena indra kulit (meraba) dan hidung (membau) tetap aktif memberi informasi", icon: "✋👃", correct: true },
+          { text: "Karena lidah bekerja dari jarak jauh", icon: "👅", correct: false }
+        ]
+      },
+      {
+        scenario: "Saat berjalan di trotoar hendak menyeberang jalan raya yang ramai, dua indra utama apa yang paling penting digunakan agar kita selamat dari kendaraan?",
+        icon: "🚦",
+        explanation: "Mata melihat warna lampu lalu lintas serta laju kendaraan, dan telinga mendengar deru mesin serta bunyi klakson peringatan!",
+        options: [
+          { text: "Mata (Melihat kendaraan) & Telinga (Mendengar klakson)", icon: "👁️👂", correct: true },
+          { text: "Lidah (Mengecap) & Hidung (Mencium aspal)", icon: "👅👃", correct: false },
+          { text: "Kulit saja tanpa perlu membuka mata", icon: "✋", correct: false }
+        ]
+      },
+      {
+        scenario: "Doni sedang pilek dan hidungnya tersumbat parah. Saat memakan sup ayam kesukaannya, ia merasa makanan jadi hambar dan kurang sedap. Mengapa demikian?",
+        icon: "🍜",
+        explanation: "Kenikmatan makanan adalah perpaduan kerja sama antara lidah (mengecap rasa dasar) dan hidung (menghirup uap aroma sedap). Saat hidung tersumbat, kita kehilangan sensasi aroma makanan!",
+        options: [
+          { text: "Karena mata Doni tertutup saat menyuap sup", icon: "👁️", correct: false },
+          { text: "Karena kelezatan makanan adalah kerja sama indra pengecap dan pembau aroma", icon: "👅👃", correct: true },
+          { text: "Karena telinga Doni tersumbat kuah mie", icon: "👂", correct: false }
+        ]
+      },
+      {
+        scenario: "Ada dua cangkir tertutup yang tidak tembus pandang. Budi ingin tahu cangkir mana yang berisi teh hangat dan mana yang berisi air es tanpa membuka tutupnya. Bagaimana caranya?",
+        icon: "☕",
+        explanation: "Kulit telapak tangan memiliki reseptor suhu yang peka sehingga dapat merasakan hangat atau dinginnya dinding cangkir saat disentuh!",
+        options: [
+          { text: "Menyentuh dinding cangkir menggunakan kulit telapak tangan", icon: "✋", correct: true },
+          { text: "Mendengarkan suara cangkir dengan telinga", icon: "👂", correct: false },
+          { text: "Mencium bagian bawah cangkir", icon: "👃", correct: false }
+        ]
+      },
+      {
+        scenario: "Beni sedang berjalan di kebun tanpa alas kaki. Tiba-tiba kakinya menginjak kerikil tajam dan ia spontan mengangkat kakinya. Mengapa Beni bisa merasakan rasa sakit itu?",
+        icon: "🪨",
+        explanation: "Kulit telapak kaki memiliki ujung saraf peraba yang sangat peka terhadap tekanan, tekstur tajam, dan rasa nyeri sebagai sinyal perlindungan diri!",
+        options: [
+          { text: "Karena kulit telapak kaki peka merasakan nyeri dan tajam", icon: "✋", correct: true },
+          { text: "Karena hidung Beni mencium bau batu", icon: "👃", correct: false },
+          { text: "Karena mata Beni berada di kaki", icon: "👁️", correct: false }
+        ]
+      },
+      {
+        scenario: "Ketika lampu kamar tidur tiba-tiba padam dan ruangan menjadi gelap gulita, indra manakah yang paling membantu kita mencari saklar lampu di dinding?",
+        icon: "💡",
+        explanation: "Ketika mata terhalang oleh kegelapan total, indra peraba pada kulit tangan bertindak sebagai pemandu untuk meraba kontur dinding hingga saklar ditemukan!",
+        options: [
+          { text: "Indra peraba (Kulit pada jari tangan)", icon: "✋", correct: true },
+          { text: "Indra pengecap (Lidah)", icon: "👅", correct: false },
+          { text: "Indra pembau (Hidung)", icon: "👃", correct: false }
+        ]
+      }
+    ];
+
+    let pos3ActiveCases = [];
+    let pos3CurrentIndex = 0;
+    let pos3Locked = false;
+
+    // --- 6. NAVIGASI LAYAR ---
+    function hideAllScreens() {
+      document.getElementById('screen-opening').classList.add('hidden');
+      document.getElementById('screen-pos1').classList.add('hidden');
+      document.getElementById('screen-pos2').classList.add('hidden');
+      document.getElementById('screen-pos3').classList.add('hidden');
+      document.getElementById('screen-result').classList.add('hidden');
+    }
+
+    function showScreen(id) {
+      hideAllScreens();
+      const el = document.getElementById(id);
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+    }
+
+    function updateScoreUI() {
+      document.getElementById('score-display').textContent = `${totalScore} Poin`;
+    }
+
+    // --- 7. MODAL SALAH (❌ TETNOT) & MODAL FAKTA SAINS ---
+    function triggerWrongFeedback(title, detailMsg, callbackNext) {
+      playTetnotWrong();
+      pendingWrongCallback = callbackNext;
+
+      document.getElementById('modal-wrong-title').textContent = title;
+      document.getElementById('modal-wrong-detail').innerHTML = detailMsg;
+      document.getElementById('modal-wrong-feedback').classList.remove('hidden');
+    }
+
+    function closeWrongModalAndProceed() {
+      playBeep('click');
+      document.getElementById('modal-wrong-feedback').classList.add('hidden');
+      if (typeof pendingWrongCallback === 'function') {
+        const cb = pendingWrongCallback;
+        pendingWrongCallback = null;
+        cb();
+      }
+    }
+
+    function showPos3ScienceFactModal(factText) {
+      playHoreeCheer();
+      confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
+      document.getElementById('modal-fact-text').textContent = factText;
+      document.getElementById('modal-fact-science').classList.remove('hidden');
+    }
+
+    function nextPos3FromModal() {
+      playBeep('click');
+      document.getElementById('modal-fact-science').classList.add('hidden');
+      pos3CurrentIndex++;
+      if (pos3CurrentIndex < pos3ActiveCases.length) {
+        loadPos3Case();
+      } else {
+        finishGame();
+      }
+    }
+
+    // --- 8. MULAI PERMAINAN ---
+    function handleStartMission() {
+      initAudio();
+      playBeep('click');
+
+      const nameInput = document.getElementById('input-student-name').value.trim();
+      const classInput = document.getElementById('input-student-class').value.trim();
+
+      studentName = nameInput !== "" ? nameInput : "Detektif Cilik";
+      studentClass = classInput !== "" ? classInput : "Kelas 3A";
+
+      document.getElementById('student-name-header').textContent = studentName;
+      document.getElementById('student-class-header').textContent = studentClass;
+
+      startPos1();
+    }
+
+    function restartToOpening() {
+      playBeep('click');
+      document.getElementById('input-student-name').value = '';
+      showScreen('screen-opening');
+      document.getElementById('level-title-display').textContent = "Pos Persiapan";
+    }
+
+    // --- 9. LOGIKA POS 1: DRAG & DROP / TAP-TO-PLACE ---
+    function startPos1() {
+      totalScore = 0;
+      earnedStars = 0;
+      pos1ProcessedCount = 0;
+      tapSelectedOrgan = null;
+      updateScoreUI();
+
+      document.getElementById('level-title-display').textContent = "Pos 1: Kapsul Sensor";
+      document.getElementById('pos1-counter').textContent = "0 / 5";
+
+      renderPos1();
+      showScreen('screen-pos1');
+    }
+
+    function renderPos1() {
+      const organsRow = document.getElementById('pos1-organs-row');
+      const capsulesGrid = document.getElementById('pos1-capsules-grid');
+      organsRow.innerHTML = '';
+      capsulesGrid.innerHTML = '';
+
+      const shuffledOrgans = [...pos1Organs].sort(() => Math.random() - 0.5);
+      const shuffledCapsules = [...pos1Capsules].sort(() => Math.random() - 0.5);
+
+      shuffledOrgans.forEach(organ => {
+        const card = document.createElement('div');
+        card.id = `organ-${organ.id}`;
+        card.dataset.organId = organ.id;
+        card.className = `organ-pill bg-gradient-to-b ${organ.color} text-white rounded-2xl md:rounded-3xl p-2.5 md:p-3 flex flex-col items-center justify-center border-2 ${organ.border}`;
+        card.setAttribute('draggable', 'true');
+
+        card.innerHTML = `
+          <div class="text-4xl md:text-5xl filter drop-shadow-md mb-1 pointer-events-none">${organ.icon}</div>
+          <span class="text-xs md:text-base font-black tracking-wider text-slate-900 bg-white/90 px-3 py-0.5 rounded-full shadow pointer-events-none">${organ.name}</span>
+          <span class="text-[10px] md:text-xs text-white/90 font-extrabold mt-1 pointer-events-none">Tarik / Ketuk!</span>
+        `;
+
+        // Mouse Drag
+        card.addEventListener('dragstart', (e) => {
+          playBeep('click');
+          card.classList.add('dragging');
+          e.dataTransfer.setData('text/plain', organ.id);
+        });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+
+        // Touch Drag PID
+        setupPos1TouchDrag(card, organ.id);
+
+        // Tap-to-Place
+        card.addEventListener('click', () => handlePos1TapSelect(organ.id, card));
+
+        organsRow.appendChild(card);
+      });
+
+      shuffledCapsules.forEach(capsule => {
+        const slot = document.createElement('div');
+        slot.id = `capsule-${capsule.id}`;
+        slot.dataset.expected = capsule.id;
+        slot.className = 'capsule-target rounded-2xl md:rounded-3xl p-3 md:p-3.5 flex flex-col justify-between items-center text-center shadow-md min-h-[140px] md:min-h-[175px]';
+
+        slot.innerHTML = `
+          <div class="slot-badge text-2xl md:text-3xl mb-1">${capsule.icon}</div>
+          <div>
+            <h4 class="text-xs md:text-sm font-black text-sky-950 leading-tight mb-1">${capsule.title}</h4>
+            <p class="text-[11px] md:text-xs text-slate-600 font-bold leading-snug">${capsule.desc}</p>
+          </div>
+          <div class="drop-indicator mt-2 bg-sky-100 text-sky-700 text-[10px] md:text-xs font-black px-2.5 py-1 rounded-full border border-sky-300">
+            Wadah Sensor 📥
+          </div>
+        `;
+
+        slot.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          slot.classList.add('drag-over');
+        });
+        slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+        slot.addEventListener('drop', (e) => {
+          e.preventDefault();
+          slot.classList.remove('drag-over');
+          const organId = e.dataTransfer.getData('text/plain');
+          checkPos1Match(organId, slot);
+        });
+
+        slot.addEventListener('click', () => {
+          if (tapSelectedOrgan) {
+            checkPos1Match(tapSelectedOrgan.id, slot);
+          }
+        });
+
+        capsulesGrid.appendChild(slot);
+      });
+    }
+
+    function setupPos1TouchDrag(element, organId) {
+      let isTouching = false;
+      let dragClone = null;
+
+      element.addEventListener('touchstart', (e) => {
+        if (element.classList.contains('locked-done')) return;
+        isTouching = true;
+        playBeep('click');
+        const touch = e.touches[0];
+
+        dragClone = element.cloneNode(true);
+        dragClone.style.position = 'fixed';
+        dragClone.style.zIndex = '9999';
+        dragClone.style.pointerEvents = 'none';
+        dragClone.style.opacity = '0.9';
+        dragClone.style.transform = 'scale(1.1) rotate(4deg)';
+        dragClone.style.width = element.offsetWidth + 'px';
+        document.body.appendChild(dragClone);
+        moveClone(touch);
+      }, { passive: false });
+
+      element.addEventListener('touchmove', (e) => {
+        if (!isTouching || !dragClone) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        moveClone(touch);
+
+        const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const slot = elBelow ? elBelow.closest('.capsule-target') : null;
+        document.querySelectorAll('.capsule-target').forEach(c => c.classList.remove('drag-over'));
+        if (slot && !slot.classList.contains('locked-done')) {
+          slot.classList.add('drag-over');
+        }
+      }, { passive: false });
+
+      element.addEventListener('touchend', (e) => {
+        if (!isTouching) return;
+        isTouching = false;
+        if (dragClone) {
+          dragClone.remove();
+          dragClone = null;
+        }
+
+        const touch = e.changedTouches[0];
+        const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const slot = elBelow ? elBelow.closest('.capsule-target') : null;
+        document.querySelectorAll('.capsule-target').forEach(c => c.classList.remove('drag-over'));
+
+        if (slot && !slot.classList.contains('locked-done')) {
+          checkPos1Match(organId, slot);
+        }
+      });
+
+      function moveClone(touch) {
+        if (!dragClone) return;
+        dragClone.style.left = (touch.clientX - dragClone.offsetWidth / 2) + 'px';
+        dragClone.style.top = (touch.clientY - dragClone.offsetHeight / 2) + 'px';
+      }
+    }
+
+    function handlePos1TapSelect(organId, card) {
+      if (card.classList.contains('locked-done')) return;
+      playBeep('click');
+      document.querySelectorAll('.organ-pill').forEach(c => c.classList.remove('selected-tap'));
+
+      if (tapSelectedOrgan && tapSelectedOrgan.id === organId) {
+        tapSelectedOrgan = null;
+      } else {
+        tapSelectedOrgan = { id: organId, el: card };
+        card.classList.add('selected-tap');
+      }
+    }
+
+    function checkPos1Match(organId, slot) {
+      const expected = slot.dataset.expected;
+      const organEl = document.getElementById(`organ-${organId}`);
+      const organObj = pos1Organs.find(o => o.id === organId);
+      const expectedCapsule = pos1Capsules.find(c => c.id === expected);
+
+      if (organId === expected) {
+        // BENAR!
+        playHoreeCheer();
+        slot.classList.add('matched', 'locked-done');
+        organEl.classList.add('locked-done', 'opacity-30', 'pointer-events-none');
+        organEl.classList.remove('selected-tap');
+
+        slot.querySelector('.drop-indicator').innerHTML = `✅ ${organObj.name} Terpasang!`;
+        slot.querySelector('.drop-indicator').className = 'drop-indicator mt-2 bg-emerald-500 text-white text-[11px] md:text-xs font-black px-3 py-1 rounded-full shadow';
+        slot.querySelector('.slot-badge').innerHTML = organObj.icon;
+
+        totalScore += 10;
+        earnedStars += 1;
+        pos1ProcessedCount++;
+        tapSelectedOrgan = null;
+        updateScoreUI();
+
+        document.getElementById('pos1-counter').textContent = `${pos1ProcessedCount} / 5`;
+        confetti({ particleCount: 30, spread: 60, origin: { y: 0.6 } });
+
+        checkPos1Completion();
+      } else {
+        // SALAH! Kunci organ, beri TETNOT, dan langsung lanjut tanpa poin!
+        slot.classList.add('failed');
+        organEl.classList.add('locked-done', 'opacity-30', 'pointer-events-none');
+        organEl.classList.remove('selected-tap');
+        tapSelectedOrgan = null;
+
+        pos1ProcessedCount++;
+        document.getElementById('pos1-counter').textContent = `${pos1ProcessedCount} / 5`;
+
+        const errorMsg = `Organ <strong>${organObj.name}</strong> tidak cocok untuk <em>${expectedCapsule.title}</em>.<br>Poin tidak bertambah. Tetap semangat!`;
+        triggerWrongFeedback("Kapsul Salah Pasang!", errorMsg, () => {
+          slot.classList.remove('failed');
+          checkPos1Completion();
+        });
+      }
+    }
+
+    function checkPos1Completion() {
+      if (pos1ProcessedCount >= 5) {
+        setTimeout(() => {
+          playHoreeCheer();
+          confetti({ particleCount: 80, spread: 80, origin: { y: 0.5 } });
+          startPos2();
+        }, 800);
+      }
+    }
+
+    // --- 10. LOGIKA POS 2: RADAR 5 RONDE TERACAK ---
+    function startPos2() {
+      pos2CurrentRoundIndex = 0;
+      document.getElementById('level-title-display').textContent = "Pos 2: Radar Aktivitas";
+      showScreen('screen-pos2');
+      loadPos2Round();
+    }
+
+    function loadPos2Round() {
+      const organKey = pos2OrganKeys[pos2CurrentRoundIndex];
+      const master = pos2MasterBank[organKey];
+      pos2SelectedCards.clear();
+
+      document.getElementById('pos2-round-indicator').textContent = `Ronde ${pos2CurrentRoundIndex + 1} dari 5`;
+      document.getElementById('pos2-header-icon').textContent = master.icon;
+      document.getElementById('pos2-organ-badge').textContent = master.badge;
+      document.getElementById('pos2-mission-prompt').textContent = master.prompt;
+
+      // Ambil 3 kartu benar acak + 3 kartu pengecoh acak
+      const chosenValid = [...master.validPool].sort(() => Math.random() - 0.5).slice(0, 3).map((item, idx) => ({
+        ...item,
+        id: `v_${idx}`,
+        correct: true
+      }));
+
+      const chosenDistractors = [...master.distractorPool].sort(() => Math.random() - 0.5).slice(0, 3).map((item, idx) => ({
+        ...item,
+        id: `d_${idx}`,
+        correct: false
+      }));
+
+      const mixedCards = [...chosenValid, chosenDistractors].flat().sort(() => Math.random() - 0.5);
+      pos2CurrentRoundData = {
+        master,
+        cards: mixedCards
+      };
+
+      const grid = document.getElementById('pos2-cards-grid');
+      grid.innerHTML = '';
+
+      mixedCards.forEach(act => {
+        const card = document.createElement('div');
+        card.id = `act-${act.id}`;
+        card.className = 'activity-card bg-white border-2 border-slate-200 rounded-2xl md:rounded-3xl p-3 md:p-3.5 flex flex-col justify-between items-center text-center';
+
+        card.innerHTML = `
+          <div class="text-4xl md:text-5xl my-1 pointer-events-none filter drop-shadow">${act.icon}</div>
+          <p class="text-xs md:text-base font-black text-slate-800 leading-snug pointer-events-none">${act.text}</p>
+          <div class="check-box mt-2 w-7 h-7 rounded-full border-2 border-slate-300 flex items-center justify-center text-xs font-black text-white bg-slate-100">
+          </div>
+        `;
+
+        card.addEventListener('click', () => togglePos2Card(act.id, card));
+        grid.appendChild(card);
+      });
+    }
+
+    function togglePos2Card(id, card) {
+      playBeep('click');
+      const box = card.querySelector('.check-box');
+      if (pos2SelectedCards.has(id)) {
+        pos2SelectedCards.delete(id);
+        card.classList.remove('selected');
+        box.innerHTML = '';
+        box.className = 'check-box mt-2 w-7 h-7 rounded-full border-2 border-slate-300 flex items-center justify-center text-xs font-black text-white bg-slate-100';
+      } else {
+        pos2SelectedCards.add(id);
+        card.classList.add('selected');
+        box.innerHTML = '✓';
+        box.className = 'check-box mt-2 w-7 h-7 rounded-full border-2 border-sky-600 flex items-center justify-center text-sm font-black text-white bg-sky-500';
+      }
+    }
+
+    function submitPos2Selection() {
+      const { cards } = pos2CurrentRoundData;
+      const correctCards = cards.filter(c => c.correct);
+      const correctIds = correctCards.map(c => c.id);
+
+      const hasAllCorrect = correctIds.every(id => pos2SelectedCards.has(id));
+      const hasNoWrong = [...pos2SelectedCards].every(id => correctIds.includes(id));
+
+      if (hasAllCorrect && hasNoWrong) {
+        // BENAR SEMPURNA!
+        playHoreeCheer();
+        totalScore += 20;
+        earnedStars += 2;
+        updateScoreUI();
+
+        confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+
+        correctIds.forEach(id => {
+          const el = document.getElementById(`act-${id}`);
+          if (el) el.classList.add('bg-emerald-100', 'border-emerald-500');
+        });
+
+        setTimeout(() => {
+          advancePos2Round();
+        }, 1200);
+      } else {
+        // SALAH! Tampilkan Silang Merah & Kunci Jawaban Benar, lalu lanjut tanpa bisa diulang
+        const correctNames = correctCards.map(c => `${c.icon} ${c.text}`).join('<br>');
+        const errorDetail = `Aktivitas yang benar seharusnya:<br><div class="mt-1 font-extrabold text-emerald-800">${correctNames}</div>`;
+
+        triggerWrongFeedback("Pilihan Kurang Tepat!", errorDetail, () => {
+          advancePos2Round();
+        });
+      }
+    }
+
+    function advancePos2Round() {
+      pos2CurrentRoundIndex++;
+      if (pos2CurrentRoundIndex < pos2OrganKeys.length) {
+        loadPos2Round();
+      } else {
+        playHoreeCheer();
+        startPos3();
+      }
+    }
+
+    // --- 11. LOGIKA POS 3: STUDI KASUS SAINS & POP-UP FAKTA SAINS BESAR ---
+    function startPos3() {
+      // Acak 3 studi kasus unik dari bank 8 soal
+      pos3ActiveCases = [...pos3QuestionBank].sort(() => Math.random() - 0.5).slice(0, 3);
+      pos3CurrentIndex = 0;
+      document.getElementById('level-title-display').textContent = "Pos 3: Kasus Detektif";
+      showScreen('screen-pos3');
+      loadPos3Case();
+    }
+
+    function loadPos3Case() {
+      pos3Locked = false;
+      const c = pos3ActiveCases[pos3CurrentIndex];
+
+      document.getElementById('pos3-case-indicator').textContent = `Kasus ${pos3CurrentIndex + 1} dari ${pos3ActiveCases.length}`;
+      document.getElementById('pos3-icon').textContent = c.icon;
+      document.getElementById('pos3-scenario').textContent = c.scenario;
+
+      const container = document.getElementById('pos3-options-container');
+      container.innerHTML = '';
+
+      const shuffledOptions = [...c.options].sort(() => Math.random() - 0.5);
+
+      shuffledOptions.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'bg-white hover:bg-purple-50 border-2 border-purple-200 text-slate-800 font-black p-3.5 md:p-4 rounded-2xl flex items-center justify-between active:scale-95 shadow-md text-left w-full transition';
+
+        btn.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-3xl md:text-4xl bg-purple-100 p-2 rounded-xl">${opt.icon}</span>
+            <span class="text-xs md:text-base leading-snug text-purple-950">${opt.text}</span>
+          </div>
+          <span class="text-xl text-purple-400">💡</span>
+        `;
+
+        btn.onclick = () => handlePos3Answer(opt.correct, btn, c);
+        container.appendChild(btn);
+      });
+    }
+
+    function handlePos3Answer(isCorrect, btn, caseData) {
+      if (pos3Locked) return;
+      pos3Locked = true;
+
+      if (isCorrect) {
+        // BENAR: Tambah skor & Buka Modal Fakta Sains Layar Penuh (Menunggu ditekan lanjut)
+        totalScore += 25;
+        earnedStars += 3;
+        updateScoreUI();
+        btn.classList.add('bg-emerald-100', 'border-emerald-500');
+
+        showPos3ScienceFactModal(caseData.explanation);
+      } else {
+        // SALAH: Tampilkan Silang Merah, kurangi poin, dan lanjut ke kasus berikutnya tanpa diulang
+        btn.classList.add('shake-animation', 'bg-rose-100', 'border-rose-500');
+        const correctOpt = caseData.options.find(o => o.correct);
+
+        const errorMsg = `Jawaban yang paling tepat adalah:<br><strong class="text-emerald-800">${correctOpt.icon} ${correctOpt.text}</strong><br><br><span class="text-slate-700 font-bold">${caseData.explanation}</span>`;
+
+        triggerWrongFeedback("Analisis Kurang Tepat!", errorMsg, () => {
+          pos3CurrentIndex++;
+          if (pos3CurrentIndex < pos3ActiveCases.length) {
+            loadPos3Case();
+          } else {
+            finishGame();
+          }
+        });
+      }
+    }
+
+    // --- 12. HASIL AKHIR & SERTIFIKAT ---
+    function finishGame() {
+      playHoreeCheer();
+      showScreen('screen-result');
+
+      // Skor maksimum: 50 (Pos 1) + 100 (Pos 2) + 75 (Pos 3) = 225
+      const finalGrade = Math.min(100, Math.round((totalScore / 225) * 100));
+
+      document.getElementById('res-student-subtitle').textContent = `${studentName} • ${studentClass}`;
+      document.getElementById('res-final-score').textContent = finalGrade;
+      document.getElementById('res-final-stars').textContent = `⭐ ${earnedStars}`;
+
+      const badgeIcon = document.getElementById('res-badge-icon');
+      const statusTitle = document.getElementById('res-status-title');
+      const feedback = document.getElementById('res-feedback-text');
+
+      if (finalGrade >= 85) {
+        badgeIcon.textContent = '🏆';
+        statusTitle.textContent = 'Detektif Master Sensorika (Sangat Mahir)';
+        statusTitle.className = 'text-xl md:text-2xl font-black text-emerald-600 my-1';
+        feedback.textContent = `Luar biasa, ${studentName}! Kamu berhasil mengidentifikasi organ, menganalisis kegiatan harian, dan memecahkan semua kasus kritis dengan cemerlang!`;
+      } else if (finalGrade >= 70) {
+        badgeIcon.textContent = '🥈';
+        statusTitle.textContent = 'Detektif Hebat Sensorika (Mahir)';
+        statusTitle.className = 'text-xl md:text-2xl font-black text-sky-600 my-1';
+        feedback.textContent = `Bagus sekali, ${studentName}! Pemahamanmu tentang peran pancaindra sudah sangat baik!`;
+      } else {
+        badgeIcon.textContent = '🥉';
+        statusTitle.textContent = 'Detektif Cilik Sensorika (Cukup)';
+        statusTitle.className = 'text-xl md:text-2xl font-black text-amber-600 my-1';
+        feedback.textContent = `Kerja bagus, ${studentName}! Tetap semangat berlatih membedakan fungsi indra peraba dan pengecap ya!`;
+      }
+
+      confetti({ particleCount: 130, spread: 90, origin: { y: 0.5 } });
+    }
+
+    // --- 13. MODAL RUBRIK GURU ---
+    function showRubrikModal() {
+      playBeep('click');
+      document.getElementById('rubrik-modal').classList.remove('hidden');
+    }
+
+    function closeRubrikModal() {
+      playBeep('click');
+      document.getElementById('rubrik-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
